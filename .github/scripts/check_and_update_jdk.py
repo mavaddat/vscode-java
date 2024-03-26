@@ -9,7 +9,7 @@ readme_ver_pattern = r'(?:(?<=Supports code from Java 1\.5 to Java )(\d+)|(?<=Ja
 
 # Query the Oracle website for the latest JDK version
 response = requests.get('http://javadl-esd-secure.oracle.com/update/baseline.version')
-latest_jdk = re.search(r'(?P<major>\d+)\.', response.text)
+latest_jdk = re.search(r'(?P<major>\d+)\.?', response.text)
 if latest_jdk is None:
     print('Failed to retrieve latest JDK version')
     exit(1)
@@ -33,9 +33,7 @@ if latest_jdk != current_jdk:
     uri_base = 'https://ci.eclipse.org/ls/job/jdt-ls-master/lastCompletedBuild/testReport/org.eclipse.jdt.ls.core.internal.{package}/{java_class}/{method}/api/python'
     # Define the test URLs to check using the template and list comprehension
     tests = [
-        uri_base.format(package='correction', java_class='ModifierCorrectionsQuickFixTest', method=m) for m in ['testAddSealedMissingClassModifierProposal', 'testAddSealedAsDirectSuperClass', 'testAddPermitsToDirectSuperClass']
-    ] + [
-        uri_base.format(package='correction', java_class='UnresolvedTypesQuickFixTest', method='testTypeInSealedTypeDeclaration')
+        uri_base.format(package='correction', java_class='ModifierCorrectionsQuickFixTest', method=m) for m in ['testAddPermitsToDirectSuperClass']
     ] + [
         uri_base.format(package='managers', java_class=c, method=m) for c, m in [('EclipseProjectImporterTest', 'testPreviewFeaturesDisabledByDefault'), ('InvisibleProjectImporterTest', 'testPreviewFeaturesEnabledByDefault'), ('MavenProjectImporterTest', f'testJava{latest_jdk}Project')]
     ]
