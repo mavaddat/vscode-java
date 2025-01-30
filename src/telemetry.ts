@@ -9,8 +9,8 @@ export namespace Telemetry {
 	export const STARTUP_EVT = "startup";
 	export const COMPLETION_EVENT = "textCompletion";
 	export const SERVER_INITIALIZED_EVT = "java.workspace.initialized";
+	export const LS_ERROR = "java.ls.error";
 	let telemetryManager: TelemetryService = null;
-	let serverInitializedReceived = false;
 
 	/**
 	 * Starts the telemetry service
@@ -25,7 +25,6 @@ export namespace Telemetry {
 		const redhatService = await getRedHatService(context);
 		const telemService = await redhatService.getTelemetryService();
 		telemetryManager = telemService;
-		setTimeout(sendEmptyStartUp, 60000); // assume LS may not have initialized
 		return telemService;
 	}
 
@@ -44,7 +43,6 @@ export namespace Telemetry {
 
 		let properties: any;
 		if (eventName === STARTUP_EVT) {
-			serverInitializedReceived = true;
 			properties= { ...data, ...javaSettings };
 		} else {
 			properties= { ...data};
@@ -56,20 +54,14 @@ export namespace Telemetry {
 		});
 	}
 
-	function sendEmptyStartUp() {
-		if (!serverInitializedReceived) {
-			return sendTelemetry(STARTUP_EVT);
-		}
-	}
-
 	function getJavaSettingsForTelemetry(config: WorkspaceConfiguration) {
 		// settings whose values we can record
 		const SETTINGS_BASIC = [
 			"java.quickfix.showAt", "java.symbols.includeSourceMethodDeclarations",
-			"java.completion.guessMethodArguments", "java.cleanup.actionsOnSave",
-			"java.completion.postfix.enabled", "java.sharedIndexes.enabled",
-			"java.inlayHints.parameterNames.enabled", "java.server.launchMode",
-			"java.autobuild.enabled"
+			"java.completion.collapseCompletionItems", "java.completion.guessMethodArguments",
+			"java.cleanup.actionsOnSave", "java.completion.postfix.enabled",
+			"java.sharedIndexes.enabled", "java.inlayHints.parameterNames.enabled",
+			"java.server.launchMode", "java.autobuild.enabled"
 		];
 		// settings where we only record their existence
 		const SETTINGS_CUSTOM = [
