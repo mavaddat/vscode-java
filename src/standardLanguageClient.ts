@@ -3,7 +3,7 @@
 import * as net from 'net';
 import * as path from 'path';
 import { CancellationToken, CodeActionKind, commands, ConfigurationTarget, DocumentSelector, EventEmitter, ExtensionContext, extensions, languages, Location, ProgressLocation, TextEditor, Uri, ViewColumn, window, workspace } from "vscode";
-import { ConfigurationParams, ConfigurationRequest, LanguageClientOptions, Location as LSLocation, MessageType, Position as LSPosition, TextDocumentPositionParams, WorkspaceEdit } from "vscode-languageclient";
+import { ConfigurationParams, ConfigurationRequest, LanguageClientOptions, Location as LSLocation, MessageType, Position as LSPosition, TextDocumentPositionParams, WorkspaceEdit, StaticFeature, ClientCapabilities, FeatureState } from "vscode-languageclient";
 import { LanguageClient, StreamInfo } from "vscode-languageclient/node";
 import { apiManager } from "./apiManager";
 import * as buildPath from './buildpath';
@@ -41,6 +41,7 @@ import { registerDocumentValidationListener } from './diagnostic';
 import { listJdks, sortJdksBySource, sortJdksByVersion } from './jdkUtils';
 import { ClientCodeActionProvider } from './clientCodeActionProvider';
 import { BuildFileSelector } from './buildFilesSelector';
+import { extendedOutlineQuickPick } from "./outline/extendedOutlineQuickPick";
 
 const extensionName = 'Language Support for Java';
 const GRADLE_CHECKSUM = "gradle/checksum/prompt";
@@ -75,13 +76,11 @@ export class StandardLanguageClient {
 
 		serverStatus.initialize();
 		serverStatus.onServerStatusChanged(status => {
-			if (status === ServerStatusKind.busy) {
-				serverStatusBarProvider.setBusy();
-			} else if (status === ServerStatusKind.error) {
+			if (status === ServerStatusKind.error) {
 				serverStatusBarProvider.setError();
 			} else if (status === ServerStatusKind.warning) {
 				serverStatusBarProvider.setWarning();
-			} else {
+			} else if (status === ServerStatusKind.ready) {
 				serverStatusBarProvider.setReady();
 			}
 		});
@@ -109,6 +108,7 @@ export class StandardLanguageClient {
 
 		// Create the language client and start the client.
 		this.languageClient = new TracingLanguageClient('java', extensionName, serverOptions, clientOptions, DEBUG);
+		this.languageClient.registerFeature(new DisableWillRenameFeature());
 
 		this.registerCommandsForStandardServer(context, jdtEventEmitter);
 		fileEventHandler.registerFileEventHandlers(this.languageClient, context);
@@ -180,9 +180,6 @@ export class StandardLanguageClient {
 				case 'Message':
 					// message goes to progress report instead
 					break;
-			}
-			if (!serverStatus.hasErrors()) {
-				serverStatusBarProvider.updateTooltip(report.message);
 			}
 		});
 
@@ -343,6 +340,19 @@ export class StandardLanguageClient {
 			apiManager.fireTraceEvent(e);
 			if (e.name === Telemetry.SERVER_INITIALIZED_EVT) {
 				return Telemetry.sendTelemetry(Telemetry.STARTUP_EVT, e.properties);
+			} else if (e.name === Telemetry.LS_ERROR) {
+				const tags = [];
+				const exception: string = e?.properties.exception;
+				if (exception !== undefined) {
+					if (exception.includes("dtree.ObjectNotFoundException")) {
+						tags.push("dtree.ObjectNotFoundException");
+					}
+
+					if (tags.length > 0) {
+						e.properties['tags'] = tags;
+						return Telemetry.sendTelemetry(Telemetry.LS_ERROR, e.properties);
+					}
+				}
 			}
 		});
 
@@ -584,6 +594,17 @@ export class StandardLanguageClient {
 			}
 		}));
 
+		context.subscriptions.push(commands.registerCommand(Commands.SHOW_EXTEND_OUTLINE, (location: any) => {
+			if (location instanceof Uri) {
+				extendedOutlineQuickPick.open(location);
+			} else {
+				if (window.activeTextEditor?.document?.languageId !== "java") {
+					return;
+				}
+				extendedOutlineQuickPick.open(window.activeTextEditor.document.uri);
+			}
+		}));
+
 		buildPath.registerCommands(context);
 		sourceAction.registerCommands(this.languageClient, context);
 		refactorAction.registerCommands(this.languageClient, context);
@@ -698,7 +719,7 @@ export class StandardLanguageClient {
 		}));
 
 		context.subscriptions.push(commands.registerCommand(Commands.OPEN_OUTPUT, () => this.languageClient.outputChannel.show(ViewColumn.Three)));
-		context.subscriptions.push(commands.registerCommand(Commands.SHOW_SERVER_TASK_STATUS, () => serverTaskPresenter.presentServerTaskView()));
+		context.subscriptions.push(commands.registerCommand(Commands.SHOW_SERVER_TASK_STATUS, (preserveFocus?: boolean) => serverTaskPresenter.presentServerTaskView(preserveFocus)));
 	}
 
 	public start(): Promise<void> {
@@ -871,4 +892,21 @@ export async function applyWorkspaceEdit(workspaceEdit: WorkspaceEdit, languageC
 	} else {
 		return Promise.resolve(true);
 	}
+}
+
+/**
+ * 'workspace/willRenameFiles' already handled so we need to disable it.
+ * @see fileEventHandler.registerFileEventHandlers
+ */
+export class DisableWillRenameFeature implements StaticFeature {
+	fillClientCapabilities(capabilities: ClientCapabilities): void {
+		capabilities.workspace.fileOperations.willRename = false;
+	}
+	getState(): FeatureState {
+		return null;
+	}
+	clear(): void {}
+	fillInitializeParams?: () => void;
+	preInitialize?: () => void;
+	initialize(): void {}
 }

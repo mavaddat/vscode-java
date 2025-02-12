@@ -226,6 +226,8 @@ export async function getJavaConfig(javaHome: string) {
 	const editorConfig = workspace.getConfiguration('editor');
 	javaConfig.format.insertSpaces = editorConfig.get('insertSpaces');
 	javaConfig.format.tabSize = editorConfig.get('tabSize');
+	const filesConfig = workspace.getConfiguration('files');
+	javaConfig.associations = filesConfig.get('associations');
 	const isInsider: boolean = version.includes("insider");
 	const androidSupport = javaConfig.jdt.ls.androidSupport.enabled;
 	switch (androidSupport) {
@@ -243,6 +245,19 @@ export async function getJavaConfig(javaHome: string) {
 			break;
 	}
 
+	const javacSupport = javaConfig.jdt.ls.javac.enabled;
+	switch (javacSupport) {
+		case "on":
+			javaConfig.jdt.ls.javac.enabled = true;
+			break;
+		case "off":
+			javaConfig.jdt.ls.javac.enabled = false;
+			break;
+		default:
+			javaConfig.jdt.ls.javac.enabled = false;
+			break;
+	}
+
 	if (javaConfig.completion.matchCase === "auto") {
 		javaConfig.completion.matchCase = "firstLetter";
 	}
@@ -257,6 +272,12 @@ export async function getJavaConfig(javaHome: string) {
 		const userConfiguredJREs: any[] = javaConfig.configuration.runtimes;
 		javaConfig.configuration.runtimes = await addAutoDetectedJdks(userConfiguredJREs);
 	}
+
+	if (!isPreferenceOverridden("java.implementationCodeLens") && typeof javaConfig.implementationsCodeLens?.enabled === 'boolean'){
+		const deprecatedImplementations = javaConfig.implementationsCodeLens.enabled;
+		javaConfig.implementationCodeLens = deprecatedImplementations ? "types" : "none";
+	}
+
 	return javaConfig;
 }
 
@@ -298,4 +319,31 @@ async function addAutoDetectedJdks(configuredJREs: any[]): Promise<any[]> {
 	}
 
 	return configuredJREs;
+}
+
+export function resolveActualCause(callstack: any): any {
+	if (!callstack) {
+		return;
+	}
+
+	const callstacks = callstack.split(/\r?\n/);
+	if (callstacks?.length) {
+		for (let i = callstacks.length - 1; i >= 0; i--) {
+			if (callstacks[i]?.startsWith("Caused by:")) {
+				return callstacks.slice(i).join("\n");
+			}
+		}
+	}
+
+	return callstack;
+}
+
+export function getVersion(extensionPath: string): string {
+	const packagePath = path.resolve(extensionPath, "package.json");
+	const packageFile = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+	if (packageFile) {
+		return packageFile.version;
+	}
+
+	return '0.0.0';
 }
