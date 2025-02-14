@@ -38,12 +38,12 @@ jobs:
     outputs:
         repo-cache-hit: ${{ steps.cache-last-commit.outputs.cache-hit }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: 'eclipse-jdtls/eclipse.jdt.ls'
           fetch-depth: 2
           path: eclipse.jdt.ls
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: 'redhat-developer/vscode-java'
           fetch-depth: 2
@@ -56,7 +56,7 @@ jobs:
           git rev-parse HEAD >> ../lastCommit
       - name: Check New Changes
         id: cache-last-commit
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: lastCommit
           key: lastCommit-${{ hashFiles('lastCommit') }}
@@ -67,11 +67,11 @@ jobs:
     steps:
       - name: Checkout JDT-LS
         if: "${{ inputs.JDT_LS_VERSION == '' }}"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: eclipse-jdtls/eclipse.jdt.ls
       - name: Cache Maven local repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.m2/repository
@@ -79,20 +79,20 @@ jobs:
             !~/.m2/repository/org/eclipse/jdt/ls
           key: maven-local-${{ hashFiles('**/pom.xml') }}
       - name: Set Up Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '23'
           distribution: 'adopt'
       - name: Build JDT-LS
         if: "${{ inputs.JDT_LS_VERSION == '' }}"
         run: |
-          ./mvnw clean verify -B -DskipTests -Pserver-distro
+          ./mvnw clean verify -B -U -DskipTests -Pserver-distro
           mkdir ../staging
           cp org.eclipse.jdt.ls.product/distro/jdt-language-server-*.tar.gz ../staging
       - name: Check Out VS Code Java
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set Up NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       - name: Install NodeJS dependencies
@@ -105,14 +105,21 @@ jobs:
       - name: Build vscode-java
         run: |
           npm install
-          npm run vscode:prepublish
-          npm run compile
+      - name: Prepare JDT-LS
+        run: |
+          rm -rf ./out
+          mkdir server/
+          if [ -e jdt-language-server-*.tar.gz ]; then
+            tar -xf jdt-language-server-*.tar.gz -C server/
+          else
+            tar -xf ../staging/jdt-language-server-*.tar.gz -C server/
+          fi
+          echo "EXT_VERSION=$(cat package.json | jq -r .version)" >> $GITHUB_ENV
       - name: Test vscode-java
         env:
           SKIP_COMMANDS_TEST: true
-          SKIP_CLASSPATH_TEST: true
         run: |
-          $(echo "xvfb-run --auto-servernum") npm run test --silent
+          xvfb-run --auto-servernum npm run test --silent
         continue-on-error: true
       - name: Clean tests
         run: npx gulp clean_test_folder
@@ -124,28 +131,18 @@ jobs:
         run: |
           npx gulp prepare_pre_release
           echo "publishPreReleaseFlag=--pre-release" >> $GITHUB_ENV
-      - name: Prepare JDT-LS
-        run: |
-          rm -rf ./out
-          mkdir server/
-          if [ -e jdt-language-server-*.tar.gz ]; then
-            tar -xf jdt-language-server-*.tar.gz -C server/
-          else
-            tar -xf ../staging/jdt-language-server-*.tar.gz -C server/
-          fi
-          echo "EXT_VERSION=$(cat package.json | jq -r .version)" >> $GITHUB_ENV
       - name: Package vscode-java
         run: |
           platforms=("win32-x64" "linux-x64" "linux-arm64" "darwin-x64" "darwin-arm64")
           for platform in ${platforms[@]}; do
-            npx gulp download_jre --target ${platform} --javaVersion 17
+            npx gulp download_jre --target ${platform} --javaVersion 21
             vsce package ${{ env.publishPreReleaseFlag }} --target ${platform} -o java-${platform}-${{ env.EXT_VERSION }}-${GITHUB_RUN_NUMBER}.vsix
           done
           rm -rf jre/
           vsce package ${{ env.publishPreReleaseFlag }} -o vscode-java-${{ env.EXT_VERSION }}-${GITHUB_RUN_NUMBER}.vsix
           ls -lash *.vsix
       - name: Upload VSIX Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: vscode-java
           path: |
@@ -169,25 +166,25 @@ jobs:
     needs: packaging-job
     steps:
       - name: Set Up NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       - name: Install dependencies
         run: |
           npm install -g typescript "@vscode/vsce" "ovsx"
       - name: Download VSIX & JDT-LS
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Publish to VS Code Marketplace
         if: ${{ github.event_name == 'schedule' || inputs.publishToMarketPlace == 'true' || inputs.publishPreRelease == 'true' }}
         run: |
           for platformVsix in vscode-java/java-*-*-${GITHUB_RUN_NUMBER}.vsix; do
-            vsce publish -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }} --packagePath ${platformVsix}
+            vsce publish --skip-duplicate -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }} --packagePath ${platformVsix}
           done
-          vsce publish -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }} --packagePath vscode-java/vscode-java-*-${GITHUB_RUN_NUMBER}.vsix
+          vsce publish --skip-duplicate -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }} --packagePath vscode-java/vscode-java-*-${GITHUB_RUN_NUMBER}.vsix
       - name: Publish to OpenVSX Registry
         if: ${{ github.event_name == 'schedule' || inputs.publishToOVSX == 'true' || inputs.publishPreRelease == 'true' }}
         run: |
           for platformVsix in vscode-java/java-*-*-${GITHUB_RUN_NUMBER}.vsix; do
-            ovsx publish -p ${{ secrets.OVSX_MARKETPLACE_TOKEN }} --packagePath ${platformVsix}
+            ovsx publish --skip-duplicate -p ${{ secrets.OVSX_MARKETPLACE_TOKEN }} --packagePath ${platformVsix}
           done
-          ovsx publish -p ${{ secrets.OVSX_MARKETPLACE_TOKEN }}  --packagePath vscode-java/vscode-java-*-${GITHUB_RUN_NUMBER}.vsix
+          ovsx publish --skip-duplicate -p ${{ secrets.OVSX_MARKETPLACE_TOKEN }}  --packagePath vscode-java/vscode-java-*-${GITHUB_RUN_NUMBER}.vsix

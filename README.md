@@ -15,8 +15,8 @@ Quick Start
 ============
 1. Install the Extension
 2. On the following platforms, the extension should activate without any setup : `win32-x64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`.\
-If on another platform, or using the "universal" version, you can [set](#setting-the-jdk) a _Java_ Development Kit. It must be Java 17 or above.
-3. Optionally, download and install a Java Development Kit for your project (Java 1.5 or above is supported). See [Project JDKs](#project-jdks) for more details
+If on another platform, or using the "universal" version, you can [set](#setting-the-jdk) a _Java_ Development Kit. It must be Java 21 or above.
+3. Optionally, download and install a Java Development Kit for your project (Java 1.8 or above is supported). See [Project JDKs](#project-jdks) for more details
 4. Extension is activated when you first access a Java file
     * Recognizes projects with *Maven* or *Gradle* build files in the directory hierarchy.
 
@@ -24,7 +24,7 @@ Features
 =========
 ![ screencast ](https://raw.githubusercontent.com/redhat-developer/vscode-java/master/images/vscode-java.0.0.1.gif)
 
-* Supports code from Java 1.5 to Java 21
+* Supports code from Java 1.8 to Java 23
 * Maven pom.xml project support
 * Gradle project support (with experimental Android project import support)
 * Standalone Java files support
@@ -60,7 +60,7 @@ Now that Java extension will publish platform specific versions, it will embed a
 
 The following part is only kept for the universal version without embedded JRE.
 
->The tooling JDK will be used to launch the Language Server for Java. And by default, will also be used to compile your projects. Java 17 is the minimum required version.\
+>The tooling JDK will be used to launch the Language Server for Java. And by default, will also be used to compile your projects. Java 21 is the minimum required version.\
 \
 The path to the Java Development Kit can be specified by the `java.jdt.ls.java.home` setting in VS Code settings (workspace/user settings). If not specified, it is searched in the following order until a JDK meets current minimum requirement.
 >- the `JDK_HOME` environment variable
@@ -81,8 +81,8 @@ If you need to compile your projects against a different JDK version, it's recom
     "path": "/path/to/jdk-11",
   },
   {
-    "name": "JavaSE-21",
-    "path": "/path/to/jdk-21",
+    "name": "JavaSE-23",
+    "path": "/path/to/jdk-23",
     "default": true
   },
 ]
@@ -123,7 +123,7 @@ The following settings are supported:
 * `java.configuration.maven.userSettings` : Path to Maven's user settings.xml.
 * `java.configuration.checkProjectSettingsExclusions`: **Deprecated, please use 'java.import.generatesMetadataFilesAtProjectRoot' to control whether to generate the project metadata files at the project root. And use 'files.exclude' to control whether to hide the project metadata files from the file explorer.** Controls whether to exclude extension-generated project settings files (`.project`, `.classpath`, `.factorypath`, `.settings/`) from the file explorer. Defaults to `false`.
 * `java.referencesCodeLens.enabled` : Enable/disable the references code lenses.
-* `java.implementationsCodeLens.enabled` : Enable/disable the implementations code lenses.
+* `java.implementationCodeLens` : Enable/disable the implementations code lens for the provided categories.
 * `java.signatureHelp.enabled` : Enable/disable signature help support (triggered on `(`).
 * `java.signatureHelp.description.enabled` : Enable/disable to show the description in signature help. Defaults to `false`.
 * `java.contentProvider.preferred` : Preferred content provider (see 3rd party decompilers available in [vscode-java-decompiler](https://github.com/dgileadi/vscode-java-decompiler)).
@@ -193,6 +193,7 @@ The following settings are supported:
 * `java.templates.typeComment`: Specifies the type comment for new Java type. Supports configuring multi-line comments with an array of strings, and using ${variable} to reference the [predefined variables](https://github.com/redhat-developer/vscode-java/wiki/Predefined-Variables-for-Java-Template-Snippets).
 * `java.references.includeAccessors`: Include getter, setter and builder/constructor when finding references. Default to true.
 * `java.configuration.maven.globalSettings` : Path to Maven's global settings.xml.
+* `java.configuration.maven.lifecycleMappings` : Path to Maven's lifecycle mappings xml.
 * `java.eclipse.downloadSources` : Enable/disable download of Maven source artifacts for Eclipse projects.
 * `java.references.includeDecompiledSources` : Include the decompiled sources when finding references. Default to true.
 * `java.project.sourcePaths`: Relative paths to the workspace where stores the source files. `Only` effective in the `WORKSPACE` scope. The setting will `NOT` affect Maven or Gradle project.
@@ -201,6 +202,11 @@ The following settings are supported:
   - `afterCursor`: Insert the generated code after the member where the cursor is located.
   - `beforeCursor`: Insert the generated code before the member where the cursor is located.
   - `lastMember`: Insert the generated code as the last member of the target type.
+* `java.codeGeneration.addFinalForNewDeclaration`: Whether to generate the 'final' modifer for code actions that create new declarations. Defaults to `none`.
+  - `none`: Do not generate final modifier
+  - `fields`: Generate 'final' modifier only for new field declarations
+  - `variables`: Generate 'final' modifier only for new variable declarations
+  - `all`: Generate 'final' modifier for all new declarations
 * `java.settings.url` : Specifies the url or file path to the workspace Java settings. See [Setting Global Preferences](https://github.com/redhat-developer/vscode-java/wiki/Settings-Global-Preferences)
 * `java.symbols.includeSourceMethodDeclarations` : Include method declarations from source files in symbol search. Defaults to `false`.
 * `java.quickfix.showAt` : Show quickfixes at the problem or line level.
@@ -209,6 +215,7 @@ The following settings are supported:
 * `java.inlayHints.parameterNames.enabled`: Enable/disable inlay hints for parameter names. Supported values are: `none`(disable parameter name hints), `literals`(Enable parameter name hints only for literal arguments) and `all`(Enable parameter name hints for literal and non-literal arguments). Defaults to `literals`.
 * `java.compile.nullAnalysis.nonnull`: Specify the Nonnull annotation types to be used for null analysis. If more than one annotation is specified, then the topmost annotation will be used first if it exists in your project dependencies. This setting will be ignored if `java.compile.nullAnalysis.mode` is set to `disabled`.
 * `java.compile.nullAnalysis.nullable`: Specify the Nullable annotation types to be used for null analysis. If more than one annotation is specified, then the topmost annotation will be used first if it exists in your project dependencies. This setting will be ignored if `java.compile.nullAnalysis.mode` is set to `disabled`.
+* `java.compile.nullAnalysis.nonnullbydefault`: Specify the NonNullByDefault annotation types to be used for null analysis. If more than one annotation is specified, then the topmost annotation will be used first if it exists in your project dependencies. This setting will be ignored if `java.compile.nullAnalysis.mode` is set to `disabled`.
 * `java.import.maven.offline.enabled`: Enable/disable the Maven offline mode. Defaults to `false`.
 * `java.codeAction.sortMembers.avoidVolatileChanges`: Reordering of fields, enum constants, and initializers can result in semantic and runtime changes due to different initialization and persistence order. This setting prevents this from occurring. Defaults to `true`.
 * `java.jdt.ls.protobufSupport.enabled`: Specify whether to automatically add Protobuf output source directories to the classpath. **Note:** Only works for Gradle `com.google.protobuf` plugin `0.8.4` or higher. Defaults to `true`.
@@ -217,7 +224,9 @@ The following settings are supported:
 * `java.completion.chain.enabled`: Enable/disable chain completion support. Defaults to `false`.
 * `java.completion.matchCase`: Specify whether to match case for code completion. Defaults to `firstLetter`.
 * `java.compile.nullAnalysis.mode`: Specify how to enable the annotation-based null analysis. Supported values are `disabled` (disable the null analysis), `interactive` (asks when null annotation types are detected), `automatic` (automatically enable null analysis when null annotation types are detected). Defaults to `interactive`.
-* `java.cleanup.actionsOnSave`: The list of clean ups to be run on the current document when it's saved. Clean ups can automatically fix code style or programming mistakes. [Click here](document/_java.learnMoreAboutCleanUps.md#java-clean-ups) to learn more about what each clean up does.
+* `java.cleanup.actionsOnSave`: **Deprecated, please use 'java.cleanup.actions' instead.** The list of clean ups to be run on the current document when it's saved. Clean ups can automatically fix code style or programming mistakes. [Click here](document/_java.learnMoreAboutCleanUps.md#java-clean-ups) to learn more about what each clean up does.
+* `java.cleanup.actions`: The list of clean ups to be run on the current document when it's saved or when the cleanup command is issued. Clean ups can automatically fix code style or programming mistakes. [Click here](document/_java.learnMoreAboutCleanUps.md#java-clean-ups) to learn more about what each clean up does.
+* `java.saveActions.cleanup`: Enable/disable cleanup actions on save.
 * `java.import.gradle.annotationProcessing.enabled`: Enable/disable the annotation processing on Gradle projects and delegate to JDT APT. Only works for Gradle 5.2 or higher.
 * `java.sharedIndexes.enabled`: [Experimental] Specify whether to share indexes between different workspaces. Defaults to `auto` and the shared indexes is automatically enabled in Visual Studio Code - Insiders.
   - auto
@@ -238,9 +247,15 @@ The following settings are supported:
   - `manual`: Manually reload the sources of the open class files
 * `java.edit.smartSemicolonDetection.enabled`: Defines the `smart semicolon` detection. Defaults to `false`.
 * `java.configuration.detectJdksAtStart`: Automatically detect JDKs installed on local machine at startup. If you have specified the same JDK version in `java.configuration.runtimes`, the extension will use that version first. Defaults to `true`.
-
-New in 1.26.0
-* `java.compile.nullAnalysis.nonnullbydefault`: Specify the NonNullByDefault annotation types to be used for null analysis. If more than one annotation is specified, then the topmost annotation will be used first if it exists in your project dependencies. This setting will be ignored if `java.compile.nullAnalysis.mode` is set to `disabled`.
+* `java.completion.collapseCompletionItems`: Enable/disable the collapse of overloaded methods in completion items. Overrides `java.completion.guessMethodArguments`. Defaults to `false`.
+* `java.diagnostic.filter`: Specifies a list of file patterns for which matching documents should not have their diagnostics reported (eg. '\*\*/Foo.java').
+* `java.search.scope`: Specifies the scope which must be used for search operation like
+  - Find Reference
+  - Call Hierarchy
+  - Workspace Symbols
+* `java.jdt.ls.javac.enabled`: [Experimental] Specify whether to enable Javac-based compilation in the language server. Requires running this extension with Java 23. Defaults to `off`.
+* `java.completion.engine`: [Experimental] Select code completion engine. Defaults to `ecj`.
+* `java.references.includeDeclarations`: Include declarations when finding references. Defaults to `true`
 
 Semantic Highlighting
 ===============
@@ -267,7 +282,7 @@ For information on getting started, refer to the [CONTRIBUTING instructions](CON
 Continuous Integration builds can be installed from [http://download.jboss.org/jbosstools/jdt.ls/staging/](http://download.jboss.org/jbosstools/jdt.ls/staging/?C=M;O=D). Download the most recent `java-<version>.vsix` file and install it by following the instructions [here](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix).
 Stable releases are archived under http://download.jboss.org/jbosstools/static/jdt.ls/stable/.
 
-Also, you can contribute your own VSCode extension to enhance the existing features by following the instructions [here](https://github.com/redhat-developer/vscode-java/wiki/Contribute-a-Java-Extension).
+Also, you can contribute your own VS Code extension to enhance the existing features by following the instructions [here](https://github.com/redhat-developer/vscode-java/wiki/Contribute-a-Java-Extension).
 
 Feedback
 ===============

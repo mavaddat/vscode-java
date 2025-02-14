@@ -344,3 +344,132 @@ Cleans up lambda expression wherever possible in the following ways:
     ```java
     ArrayList::new;
     ```
+
+### `organizeImports`
+
+Performs the "Organize Imports" operation.
+
+**Note** : Since clean ups are meant to be applied without user feedback (eg. prompts about ambiguous types), this may leave some types unresolved. To properly resolve these ambiguous types, one can do so manually (code actions, source actions), or by calling "Organize Imports" through the command palette / key binding (<kbd>shift</kbd> + <kbd>alt</kbd> + <kbd>o</kbd>).
+
+For example:
+
+```java
+package test1;
+public class A {
+    public void test() {
+        List<String> a1;
+        Iterator<String> a2;
+        Map<String, String> a3;
+        Set<String> a4;
+        JarFile a5;
+        StringTokenizer a6;
+        Path a7;
+        URI a8;
+        HttpURLConnection a9;
+        InputStream a10;
+        Field a11;
+        Parser a12;
+    }
+}
+```
+
+becomes:
+
+```java
+package test1;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.jar.JarFile;
+
+public class A {
+    public void test() {
+        List<String> a1;
+        Iterator<String> a2;
+        Map<String, String> a3;
+        Set<String> a4;
+        JarFile a5;
+        StringTokenizer a6;
+        Path a7;
+        URI a8;
+        HttpURLConnection a9;
+        InputStream a10;
+        Field a11;
+        Parser a12;
+    }
+}
+```
+
+### `renameUnusedLocalVariables`
+
+Rename unused loop variables, try-with-resource variables, catch parameters, lambda parameters, pattern variables to `_`.
+
+For example:
+
+```java
+J j = (a, b) -> System.out.println(a);
+
+switch (r) {
+    case R(_, long l) -> {}
+    case R r2 -> {}
+}
+```
+
+becomes:
+
+```java
+J j = (a, _) -> System.out.println(a);
+
+switch (r) {
+    case R(_, _) -> {}
+    case R _ -> {}
+}
+```
+
+### `useSwitchForInstanceofPattern`
+
+Convert if/else chains to pattern matching switch statements.
+
+For example:
+
+```java
+int i, j;
+double d;
+boolean b;
+if (x instanceof Integer xint) {
+    i = xint.intValue();
+} else if (x instanceof Double xdouble) {
+    d = xdouble.doubleValue();
+} else if (x instanceof Boolean xboolean) {
+    b = xboolean.booleanValue();
+} else {
+    i = 0;
+    d = 0.0D;
+    b = false;
+}
+```
+
+becomes:
+
+```java
+int i, j;
+double d;
+boolean b;
+switch (x) {
+    case Integer xint -> i = xint.intValue();
+    case Double xdouble -> d = xdouble.doubleValue();
+    case Boolean xboolean -> b = xboolean.booleanValue();
+    case null, default -> {
+        i = 0;
+        d = 0.0D;
+        b = false;
+    }
+}
+```

@@ -8,12 +8,12 @@ import { getJavaConfiguration } from "./utils";
 const JAVA_SERVER_TASK_PRESENTER_TASK_NAME = "Java Build Status";
 
 export namespace serverTaskPresenter {
-	export async function presentServerTaskView() {
+	export async function presentServerTaskView(preserveFocus?: boolean) {
 		const execution = await getPresenterTaskExecution();
 		const terminals = window.terminals;
 		const presenterTerminals = terminals.filter(terminal => terminal.name.indexOf(execution.task.name) >= 0);
 		if (presenterTerminals.length > 0) {
-			presenterTerminals[0].show();
+			presenterTerminals[0].show(preserveFocus);
 		}
 		activationProgressNotification.hide();
 	}
@@ -47,7 +47,7 @@ async function getPresenterTaskExecution(): Promise<TaskExecution> {
 // Fix #1180. When switching to multiroot workspace by "Add Folder to Workspace...", vscode restarts the extension
 // host without deactivating the extension. See https://github.com/microsoft/vscode/issues/69335
 // This is to clean up the existing task execution and terminal created by previous extension instance because they
-// are no longer accessible to the current extension instance afte the restart.
+// are no longer accessible to the current extension instance after the restart.
 // TODO - As mentioned in https://github.com/microsoft/vscode/issues/69335, vscode will no long restart because of
 // workspace changes. We can revisit this issue to see if we can remove the fix.
 async function killExistingExecutions() {

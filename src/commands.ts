@@ -183,6 +183,7 @@ export namespace Commands {
      * Organize imports silently.
      */
     export const ORGANIZE_IMPORTS_SILENTLY = "java.edit.organizeImports";
+    export const MANUAL_CLEANUP = "java.action.doCleanup";
     /**
      * Handle a paste event.
      */
@@ -350,4 +351,28 @@ export namespace Commands {
      */
     export const RESOLVE_PASTED_TEXT = "java.project.resolveText";
 
+    /**
+     * The command when clicking the server status bar item.
+     */
+    export const OPEN_STATUS_SHORTCUT = "_java.openShortcuts";
+
+    /**
+     * Change java search scope.
+     */
+    export const CHANGE_JAVA_SEARCH_SCOPE = "java.change.searchScope";
+
+    /**
+     * Show Extended Outline for current document.
+     */
+    export const SHOW_EXTEND_OUTLINE = 'java.action.showExtendedOutline';
+
+}
+
+/**
+ * Command titles used to render in the UI
+ */
+export namespace CommandTitle {
+    export const OPEN_JAVA_SETTINGS = "$(settings-gear) Open Java Settings";
+    export const OPEN_LOGS = "$(output) Open Logs";
+    export const CLEAN_WORKSPACE_CACHE = "$(trash) Clean Workspace Cache...";
 }

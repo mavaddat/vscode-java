@@ -29,12 +29,12 @@ gulp.task('clean_jre', function (done) {
 });
 
 // Pls update the latest JRE if a new JDK is announced.
-const LATEST_JRE = 17;
+const LATEST_JRE = 21;
 
 /**
  * Usage:
  * npx gulp download_jre    // Download the latest JRE for the platform of the current running machine.
- * npx gulp download_jre --target darwin-x64 --javaVersion 17  // Download the specified JRE for the specified platform.
+ * npx gulp download_jre --target darwin-x64 --javaVersion 21  // Download the specified JRE for the specified platform.
  *
  * Supported platforms:
  *  win32-x64,
@@ -80,11 +80,11 @@ gulp.task('download_jre', async function (done) {
 
 		/**
 		 * Here are the contents for a sample justj.manifest file:
-		 * ../20211012_0921/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-17-linux-aarch64.tar.gz
-		 * ../20211012_0921/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-17-linux-x86_64.tar.gz
-		 * ../20211012_0921/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-17-macosx-aarch64.tar.gz
-		 * ../20211012_0921/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-17-macosx-x86_64.tar.gz
-		 * ../20211012_0921/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-17-win32-x86_64.tar.gz
+		 * ../20241101_1100/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-21.0.5-linux-aarch64.tar.gz
+		 * ../20241101_1100/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-21.0.5-linux-x86_64.tar.gz
+		 * ../20241101_1100/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-21.0.5-macosx-aarch64.tar.gz
+		 * ../20241101_1100/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-21.0.5-macosx-x86_64.tar.gz
+		 * ../20241101_1100/org.eclipse.justj.openjdk.hotspot.jre.full.stripped-21.0.5-win32-x86_64.tar.gz
 		 */
 		const javaPlatform = platformMapping[targetPlatform];
 		const list = manifest.split(/\r?\n/);
@@ -127,13 +127,13 @@ gulp.task('download_lombok', async function (done) {
 	}
 
 	await new Promise(function (resolve, reject) {
-		const lombokVersion = '1.18.30';
+		const lombokVersion = '1.18.36';
 		// The latest lombok version can be found on the website https://projectlombok.org/downloads
 		const lombokUrl = `https://projectlombok.org/downloads/lombok-${lombokVersion}.jar`;
 		download(lombokUrl)
-			.pipe(gulp.dest('./lombok/'))
+			.pipe(gulp.dest("./lombok/"))
 			.on("error", reject)
-			.on('end', resolve);
+			.on("end", resolve);
 	});
 	done();
 });
@@ -278,8 +278,8 @@ function download_server_fn(){
 
 function build_server_fn(){
 	fse.removeSync('./server');
-	cp.execSync(mvnw() + ' -Pserver-distro clean package -Declipse.jdt.ls.skipGradleChecksums', { cwd: server_dir, stdio: [0, 1, 2] });
-	gulp.src(server_dir + '/org.eclipse.jdt.ls.product/distro/*.tar.gz')
+	cp.execSync(mvnw() + ' -Pserver-distro clean package -U -Declipse.jdt.ls.skipGradleChecksums', { cwd: server_dir, stdio: [0, 1, 2] });
+	gulp.src(server_dir + '/org.eclipse.jdt.ls.product/distro/*.tar.gz', { encoding: false })
 		.pipe(decompress())
 		.pipe(gulp.dest('./server'));
 }

@@ -1,5 +1,6 @@
 'use strict';
 
+import { Command, Range } from 'vscode';
 import {
     CodeActionParams,
     ExecuteCommandParams,
@@ -13,7 +14,6 @@ import {
     WorkspaceEdit,
     WorkspaceSymbolParams,
 } from 'vscode-languageclient';
-import { Command, Range } from 'vscode';
 
 /**
  * The message type. Copied from vscode protocol
@@ -233,6 +233,10 @@ export namespace OrganizeImportsRequest {
     export const type = new RequestType<CodeActionParams, WorkspaceEdit, void>('java/organizeImports');
 }
 
+export namespace CleanupRequest {
+    export const type = new RequestType<TextDocumentIdentifier, WorkspaceEdit, void>('java/cleanup');
+}
+
 export interface ImportCandidate {
     fullyQualifiedName: string;
     id: string;
@@ -362,11 +366,25 @@ export namespace GetRefactorEditRequest {
     export const type = new RequestType<GetRefactorEditParams, RefactorWorkspaceEdit, void>('java/getRefactorEdit');
 }
 
+export namespace GetChangeSignatureInfoRequest {
+    export const type = new RequestType<CodeActionParams, ChangeSignatureInfo, void>('java/getChangeSignatureInfo');
+}
+
 export interface SelectionInfo {
     name: string;
     length: number;
     offset: number;
     params?: string[];
+}
+
+export interface ChangeSignatureInfo {
+    methodIdentifier: string;
+	modifier: string;
+	returnType: string;
+	methodName: string;
+	parameters: any;
+    exceptions: any;
+    errorMessage: string;
 }
 
 export interface InferSelectionParams {
